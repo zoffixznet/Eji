@@ -12,13 +12,24 @@ grammar Eji::Grammar is HLL::Grammar {
 
     proto token statement {*}
     token statement:sym<💬> {
-        <sym> <.ws> <value>
+        <sym> <.ws> <EXPR>
     }
 
     proto token value {*}
     token value:sym<string> { <?["']> <quote_EXPR: ':q'> }
     token value:sym<integer> { '-'? \d+ }
     token value:sym<float>   { '-'? \d+ '.' \d+ }
+
+    token term:sym<value> { <value> }
+
+    my %multiplicative := nqp::hash('prec', 'u=', 'assoc', 'left');
+    my %additive       := nqp::hash('prec', 't=', 'assoc', 'left');
+
+    token infix:<✖> { <sym> <O(|%multiplicative, :op<mul_n>)> }
+    token infix:<➗> { <sym> <O(|%multiplicative, :op<div_n>)> }
+    token infix:<➕> { <sym> <O(|%additive,       :op<add_n>)> }
+    token infix:<➖> { <sym> <O(|%additive,       :op<sub_n>)> }
+
 }
 
 grammar Eji::Actions is HLL::Actions {
@@ -38,7 +49,7 @@ grammar Eji::Actions is HLL::Actions {
     }
 
     method statement:sym<💬>($/) {
-        make QAST::Op.new( :op('say'), $<value>.ast );
+        make QAST::Op.new( :op('say'), $<EXPR>.ast );
     }
 
     method value:sym<string>($/) { make $<quote_EXPR>.ast; }
@@ -47,6 +58,10 @@ grammar Eji::Actions is HLL::Actions {
     }
     method value:sym<float>($/) {
         make QAST::NVal.new: :value(+$/.Str);
+    }
+
+    method term:sym<value>($/) {
+        make $<value>.ast;
     }
 }
 
