@@ -25,10 +25,10 @@ grammar Eji::Grammar is HLL::Grammar {
     my %multiplicative := nqp::hash('prec', 'u=', 'assoc', 'left');
     my %additive       := nqp::hash('prec', 't=', 'assoc', 'left');
 
-    token infix:<✖> { <sym> <O(|%multiplicative, :op<mul_n>)> }
-    token infix:<➗> { <sym> <O(|%multiplicative, :op<div_n>)> }
-    token infix:<➕> { <sym> <O(|%additive,       :op<add_n>)> }
-    token infix:<➖> { <sym> <O(|%additive,       :op<sub_n>)> }
+    token infix:sym<✖> { <sym> <O(|%multiplicative, :op<mul_n>)> }
+    token infix:sym<➗> { <sym> <O(|%multiplicative, :op<div_n>)> }
+    token infix:sym<➕> { <sym> <O(|%additive,       :op<add_n>)> }
+    token infix:sym<➖> { <sym> <O(|%additive,       :op<sub_n>)> }
 
 }
 
