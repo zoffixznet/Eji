@@ -1,0 +1,62 @@
+#!/usr/bin/env nqp
+
+# http://unicode.org/emoji/charts/full-emoji-list.html
+
+use NQPHLL;
+
+grammar Eji::Grammar is HLL::Grammar {
+    token TOP { <statementlist> }
+    token ws { <!ww> \h* || \h+ }
+
+    rule statementlist { [ <statement> "\n"+ ]* }
+
+    proto token statement {*}
+    token statement:sym<💬> {
+        <sym> <.ws> <value>
+    }
+
+    proto token value {*}
+    token value:sym<string> { <?["']> <quote_EXPR: ':q'> }
+    token value:sym<integer> { '-'? \d+ }
+    token value:sym<float>   { '-'? \d+ '.' \d+ }
+}
+
+grammar Eji::Actions is HLL::Actions {
+    method TOP($/) {
+        make QAST::Block.new(
+            QAST::Var.new(:name<@*ARGS>, :scope<local>, :decl<param>),
+            $<statementlist>.ast,
+        );
+    }
+
+    method statementlist($/) {
+        my $stmts := QAST::Stmts.new( :node($/) );
+        for $<statement> {
+            $stmts.push($_.ast);
+        }
+        make $stmts;
+    }
+
+    method statement:sym<💬>($/) {
+        make QAST::Op.new( :op('say'), $<value>.ast );
+    }
+
+    method value:sym<string>($/) { make $<quote_EXPR>.ast; }
+    method value:sym<integer>($/) {
+        make QAST::IVal.new: :value(+$/.Str);
+    }
+    method value:sym<float>($/) {
+        make QAST::NVal.new: :value(+$/.Str);
+    }
+}
+
+grammar Eji::Compiler is HLL::Compiler {
+}
+
+sub MAIN (*@ARGS) {
+    my $comp := Eji::Compiler.new;
+    $comp.language('Eji');
+    $comp.parsegrammar(Eji::Grammar);
+    $comp.parseactions(Eji::Actions);
+    $comp.command_line(@ARGS, :encoding<utf8>);
+}
